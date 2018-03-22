@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Page Template</title>
+		<style>
+			.legend {
+				font-size: 12px;
+			}
+			rect {
+				stroke-width:2;
+			}
+			#chart {
+				height: 360px;
+				position: relative;
+				width: 360px;
+				margin: 0 auto;
+			}
+		</style>
+        <script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
+    </head>
+    <body>
+		<div id="chart"></div>
+        <script type="text/javascript">
+			var h = 300;
+			var w = 300;
+			
+			
+
+			d3.csv('Penny-Transactions.csv', function(error, dataset) {
+				
+				dataset.forEach(function(d) {
+					d.Amount = +d.Amount;
+				});
+				
+				
+				
+				});
+					
+		</script>
+    </body>
+</html>

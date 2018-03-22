@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>D3: A bar chart with divs</title>
+		<script type="text/javascript" src="../d3/d3.v3.js"></script>
+		<style type="text/css">
+		
+			div.bar {
+				display: inline-block;
+				width: 20px;
+				height: 75px;	/* Gets overriden by D3-assigned height below */
+				margin-right: 2px;
+				background-color: teal;
+			}
+		
+		</style>
+	</head>
+	<body>
+		<p>Click on this text to update the chart with new data values(once).</p>
+		<script type="text/javascript">
+			var w = 500;
+			var h = 100;
+			var barPadding = 1;
+			
+			var dataset = [ 5, 10, 13, 19, 21, 25, 22, 18, 15, 13,
+							11, 12, 15, 20, 18, 17, 16, 18, 23, 25 ];
+			
+			var svg = d3.select("body")
+			            .append("svg")
+						.attr("width", w)
+						.attr("height", h);
+						
+			var xScale = d3.scale.ordinal()
+								 .domain(d3.range(dataset.length))
+								 .rangeRoundBands([0,w], 0.05); 
+			
+			var yScale = d3.scale.linear()
+								 .domain([0, d3.max(dataset)])
+								 .range([0,h]);
+						
+			svg.selectAll("rect")
+			   .data(dataset)
+			   .enter()
+			   .append("rect")
+			   .attr({x: function(d, i) { return xScale(i); },
+			          y: function(d) { return h - d * 4; },
+			          width: xScale.rangeBand(),
+			          height: function(d) {	return d * 5; },
+			          fill: function(d) { return "rgb(0, 0," + (d * 10) + ")"; }
+			   });
+			   
+			svg.selectAll("text")
+			   .data(dataset)
+			   .enter()
+			   .append("text")
+			   .text(function(d) { return d; })
+			   .attr({
+					x: function(d, i) { return xScale(i) + xScale.rangeBand() / 2;},
+					y: function(d) { return h - yScale(d) + 14 },
+					fill: "white"
+				})
+				.attr("font-size", "11px")
+				.attr("font-family", "sans-serif")
+				.attr("text-anchor", "middle");
+			   
+			d3.select("p")
+			  .on("click", function() {
+					
+					dataset.shift();
+					
+					xScale.domain(d3.range(dataset.length));
+					yScale.domain([0, d3.max(dataset)]);
+					
+					
+					   
+					var bars = svg.selectAll("rect")
+								  .data(dataset);
+								  
+					bars.transition()
+						.duration(500)
+						.attr("x", function(d, i) {				//Set new x position, based on the updated xScale
+							return xScale(i); 
+						})
+						.attr("y", function(d) {				//Set new y position, based on the updated yScale
+							return h - yScale(d);
+						})
+						.attr("width", xScale.rangeBand())		//Set new width value, based on the updated xScale
+						.attr("height", function(d) {			//Set new height value, based on the updated yScale
+							return yScale(d);
+						});
+								  
+					bars.exit()
+						.transition()
+						.duration(500)
+						.attr("x", w)
+						.remove();
+						
+					var barsText = svg.selectAll("text")
+									  .data(dataset);
+									  
+					barsText.transition()
+						.duration(500)
+						.attr("x", function(d, i) {				//Set new x position, based on the updated xScale
+							return xScale(i) + xScale.rangeBand() / 2;;
+						})
+						.attr("y", function(d) {				//Set new y position, based on the updated yScale
+							return h - yScale(d) + 14;
+						})
+						.attr("width", xScale.rangeBand())		//Set new width value, based on the updated xScale
+						.attr("height", function(d) {			//Set new height value, based on the updated yScale
+							return yScale(d);
+						});
+						
+					barsText.exit()
+							.transition()
+							.duration(500)
+							.attr("x", w)
+							.remove();
+							
+					
+					   
+			  });
+			
+		</script>
+	</body>
+</html>

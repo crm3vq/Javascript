@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Page Template</title>
+		<style>
+			.legend {
+				font-size: 12px;
+			}
+			rect {
+				stroke-width:2;
+				cursor: pointer;
+			}
+			rect.disabled {
+				fill: transparent !important;
+			}
+			#chart {
+				height: 360px;
+				position: relative;
+				width: 360px;
+				margin: 0 auto;
+			}
+			.tooltip {
+				background: #eee;
+				box-shadow: 0 0 5px #999999;
+				color: #333;
+				display: none;
+				font-size: 12px;
+				left: 130px;
+				padding: 10px;
+				position: absolute;
+				text-align: center;
+				top: 95px;
+				width: 80px;
+				z-index: 10;
+			}
+			h1 {
+				font-size: 14px;
+				text-align: center;
+			}
+		</style>
+        <script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
+    </head>
+    <body>
+		<h1> My Spending </h1>
+		<div id="chart"></div>
+        <script type="text/javascript">
+            
+			
+			var w = 360;
+			var h = 360; 
+			var radius = w / 2;
+			var color = d3.scaleOrdinal(d3.schemeCategory20b);
+			
+			var legendRectSize = 18;
+			var legendSpacing = 4;
+			var color = d3.scaleOrdinal(d3.schemeCategory20b);
+			
+			var svg = d3.select('#chart')
+						.append('svg')
+						.attr('width', w)
+						.attr('height', h)
+						.append('g')
+						.attr('transform', 'translate(' + (w/2) + ',' + (h/2) + ')');
+						
+			var arc = d3.arc()
+						.innerRadius(radius * .65)
+						.outerRadius(radius);
+						
+			var pie = d3.pie()
+						.value(function(d) {return d.total;})
+						.sort(null);
+						
+			var tooltip = d3.select('#chart')
+							.append('div')
+							.attr('class', 'tooltip')
+			tooltip.append('div')
+					   .attr('class', 'name')
+			   
+			tooltip.append('div')
+				   .attr('class', 'total')
+			
+						
+			d3.csv('Penny-Transactions.csv', function(error, dataset) {
+				
+				dataset.forEach(function(d) {
+					d.Amount = +d.Amount;
+					d.enabled = true;
+				});
+				
+				// There's probably a better way to do this.	
+				var bills = dataset.filter(function(d) {return d.Category == "Bills"})
+				var billsTotal = bills.reduce(function(sum, d) {
+					return sum + Math.abs(d.Amount);
+				}, 0);
+				
+				var transportation = dataset.filter(function(d) {return d.Category == "Transportation"});
+				var transportationTotal = transportation.reduce(function(sum, d) {
+					return sum + Math.abs(d.Amount);
+				}, 0);
+				
+				var food = dataset.filter(function(d) {return d.Category == "Food"});
+				var foodTotal = food.reduce(function(sum, d) {
+					return sum + Math.abs(d.Amount);
+				}, 0);
+				
+				var income = dataset.filter(function(d) {return d.Category == "Income"});
+				var incomeTotal = income.reduce(function(sum, d) {
+					return sum + Math.abs(d.Amount);
+				}, 0);
+				
+				var other = dataset.filter(function(d) {return d.Category == "Other"});
+				var otherTotal = other.reduce(function(sum, d) {
+					return sum + Math.abs(d.Amount);
+				}, 0);
+				
+				var totalData = [{name: "Bills", category: bills, total: billsTotal},{name: "Transportation", category: transportation, total: transportationTotal},
+								 {name: "Food", category: food, total: foodTotal}, {name: "Income", category: income, total: incomeTotal},
+								 {name: "Other", category: other, total: otherTotal}
+								];
+				totalData.forEach(function(d) {
+					d.enabled = true;
+				});
+
+				var path = svg.selectAll('path')
+							  .data(pie(totalData))
+							  .enter()
+							  .append('path')
+							  .attr('d', arc)
+							  .attr('fill', function(d, i) {
+								return color(d.data.name);
+							  })
+							  .each(function(d) { this._current = d; });
+							  
+				path.on('mouseover', function(d) {
+					var total = d3.sum(dataset.map(function(d) {
+						return (d.enabled) ? d.total : 0;
+				}));
+				
+				tooltip.select('.name').html(d.data.name);
+				tooltip.select('.total').html('$' + d.data.total);
+				tooltip.style('display', 'block');
+				});
+				
+				path.on('mouseout', function(d) {
+					tooltip.style('display', 'none');
+				});
+			
+				var legend = svg.selectAll('.legend')
+								.data(color.domain())
+								.enter()
+								.append('g')
+								.attr('class', 'legend')
+								.attr('transform', function(d, i) {
+									var height = legendRectSize + legendSpacing;
+									var offset = height * color.domain().length / 2;
+									var horz = -2 * legendRectSize;
+									var vert = i * height - offset;
+									return 'translate(' + horz + ',' + vert + ')';							
+								});
+								
+				legend.append('rect')
+					  .attr('width', legendRectSize)
+					  .attr('height', legendRectSize)
+					  .style('fill', color)
+					  .style('stroke', color)
+					  .on('click', function(name) {
+							var rect = d3.select(this);
+							var enabled = true;
+							var totalEnabled = d3.sum(dataset.map(function(d) {
+								return (d.enabled) ? 1 : 0;
+							}));
+							
+							if (rect.attr('class') === 'disabled') {
+								rect.attr('class', '');
+							} else {
+								if (totalEnabled < 2) return;
+								rect.attr('class', 'disabled');
+								enabled = false;
+							}
+							
+							pie.value(function(d) {
+								if (d.name === name) d.enabled = enabled;
+								return (d.enabled) ? d.total : 0;
+							});
+							
+							path = path.data(pie(totalData));
+							
+							path.transition()
+								.duration(750)
+								.attrTween('d', function(d) {
+									var interpolate = d3.interpolate(this._current, d);
+									this._current = interpolate(0);
+									return function(t) {
+										return arc(interpolate(t));
+									};
+								});
+						});
+					  
+				legend.append('text')
+					  .attr('x', legendRectSize + legendSpacing)
+					  .attr('y', legendRectSize - legendSpacing)
+					  .text(function(d) {return d; });
+				
+		});
+        </script>
+    </body>
+</html>
