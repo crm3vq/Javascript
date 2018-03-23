@@ -44,6 +44,7 @@
     <body>
 		<h1> My Spending </h1>
 		<div id="chart"></div>
+		<div id="lineChart"></div>
         <script type="text/javascript">
             
 			
@@ -85,6 +86,7 @@
 				
 				dataset.forEach(function(d) {
 					d.Amount = +d.Amount;
+					
 					d.enabled = true;
 				});
 				
@@ -203,6 +205,10 @@
 					  .text(function(d) {return d; });
 				
 		});
+		
+		var svg2 = d3.select('#lineChart')
+		
+		
         </script>
     </body>
 </html>
